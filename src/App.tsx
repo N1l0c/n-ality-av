@@ -43,78 +43,94 @@ export default function App() {
     osc3Ref.current = osc3;
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!osc2Ref.current || !osc3Ref.current) return;
+    useEffect(() => {
+      const updateFromPosition = (x: number, y: number) => {
+        if (!osc2Ref.current || !osc3Ref.current) return;
 
-      const { innerWidth, innerHeight } = window;
+        const { innerWidth, innerHeight } = window;
 
-      const freqX = mapRange(e.clientX, 0, innerWidth, 110, 880);
-      const freqY = mapRange(e.clientY, 0, innerHeight, 880, 110);
+        const freqX = mapRange(x, 0, innerWidth, 110, 880);
+        const freqY = mapRange(y, 0, innerHeight, 880, 110);
 
-      osc2Ref.current.frequency.value = freqX;
-      osc3Ref.current.frequency.value = freqY;
+        osc2Ref.current.frequency.value = freqX;
+        osc3Ref.current.frequency.value = freqY;
 
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw beat interference pattern
-      for (let x = 0; x < canvas.width; x += 4) {
-        const localFreqX = osc2Ref.current.frequency.value;
-        const localFreqY = osc3Ref.current.frequency.value;
+        // Draw beat interference pattern
+        for (let x = 0; x < canvas.width; x += 4) {
+          const localFreqX = osc2Ref.current.frequency.value;
+          const localFreqY = osc3Ref.current.frequency.value;
 
-        const y =
-          canvas.height / 2 +
-          Math.sin(x * 0.01 * localFreqX) * 200 +
-          Math.sin(x * 0.01 * localFreqY) * 200;
+          const y =
+            canvas.height / 2 +
+            Math.sin(x * 0.01 * localFreqX) * 200 +
+            Math.sin(x * 0.01 * localFreqY) * 200;
 
-        const avgFreq = (localFreqX + localFreqY) / 2;
-        const hue = mapRange(avgFreq, 110, 880, 220, 360);
+          const avgFreq = (localFreqX + localFreqY) / 2;
+          const hue = mapRange(avgFreq, 110, 880, 220, 360);
 
-        ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, 2 * Math.PI);
-        ctx.fill();
-      }
+          ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
 
-      // Draw MIDI gridlines A2–A5 (MIDI 45–81)
-      for (let midi = 45; midi <= 81; midi++) {
-        const freq = Tone.Frequency(midi, 'midi').toFrequency();
-        const noteName = Tone.Frequency(midi, 'midi').toNote();
+        // Draw MIDI gridlines A2–A5 (MIDI 45–81)
+        for (let midi = 45; midi <= 81; midi++) {
+          const freq = Tone.Frequency(midi, 'midi').toFrequency();
+          const noteName = Tone.Frequency(midi, 'midi').toNote();
 
-        const xPos = mapRange(freq, 110, 880, 0, canvas.width);
-        ctx.beginPath();
-        ctx.moveTo(xPos, 0);
-        ctx.lineTo(xPos, canvas.height);
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.stroke();
+          const xPos = mapRange(freq, 110, 880, 0, canvas.width);
+          ctx.beginPath();
+          ctx.moveTo(xPos, 0);
+          ctx.lineTo(xPos, canvas.height);
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.stroke();
 
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.font = '14px monospace';
-        ctx.fillText(noteName, xPos + 2, 12);
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.font = '14px monospace';
+          ctx.fillText(noteName, xPos + 2, 12);
 
-        const yPos = mapRange(freq, 880, 110, 0, canvas.height);
-        ctx.beginPath();
-        ctx.moveTo(0, yPos);
-        ctx.lineTo(canvas.width, yPos);
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.stroke();
+          const yPos = mapRange(freq, 880, 110, 0, canvas.height);
+          ctx.beginPath();
+          ctx.moveTo(0, yPos);
+          ctx.lineTo(canvas.width, yPos);
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.stroke();
 
-        ctx.fillText(noteName, 10, yPos - 4);
-      }
-    };
+          ctx.fillText(noteName, 10, yPos - 4);
+        }
+      };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+      const handleMouseMove = (e: MouseEvent) => {
+        updateFromPosition(e.clientX, e.clientY);
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          updateFromPosition(touch.clientX, touch.clientY);
+        }
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('touchmove', handleTouchMove);
+      };
+    }, []);
 
   const startAudio = async () => {
     await Tone.start();
