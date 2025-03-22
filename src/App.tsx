@@ -14,7 +14,7 @@ export default function App() {
   const handleStart = async () => {
     await Tone.start();
     setStarted(true);
-    const { osc1, osc2, osc3 } = createOscillators();
+    const { osc1: _osc1, osc2, osc3 } = createOscillators();
     osc2Ref.current = osc2;
     osc3Ref.current = osc3;
   };
