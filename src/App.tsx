@@ -18,6 +18,19 @@ export default function App() {
 
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
+    
+  const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Redraw with current frequencies after resizing
+      if (osc2Ref.current && osc3Ref.current) {
+        updateFromPosition(window.innerWidth / 2, window.innerHeight / 2);
+      }
+    };
 
   const updateFromPosition = (x: number, y: number) => {
     if (!osc2Ref.current || !osc3Ref.current) return;
@@ -124,10 +137,13 @@ export default function App() {
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // ← initialize on first load
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('resize', resizeCanvas); // 👈 cleanup
     };
   }, []);
 
