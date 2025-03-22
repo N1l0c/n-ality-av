@@ -31,27 +31,31 @@ export default function App() {
         fontFamily: 'sans-serif',
       }}
     >
-      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-        N-ality Audio Visual Scaffold
-      </h1>
-      <p>Move your finger or mouse to explore the frequency space.</p>
+      {!started && (<h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Audio Visual Scaffold</h1>)}
 
       {!started && (
-        <button
-          onClick={handleStart}
-          style={{
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            background: 'white',
-            color: 'black',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            zIndex: 10,
-          }}
-        >
-          Tap to Start Audio
-        </button>
+        <>
+          <p style={{ maxWidth: '600px', textAlign: 'center', marginBottom: '1rem' }}>
+            <strong>Warning:</strong> This app produces continuous tones and visual patterns that may be sensitive for users with auditory or photosensitive conditions. Please lower your volume and proceed with care.
+          </p>
+          <p>Move your finger or mouse to explore the frequency space.</p>
+          <button
+            onClick={handleStart}
+            style={{
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              background: 'white',
+              color: 'black',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              zIndex: 10,
+              marginTop: '1rem',
+            }}
+          >
+            Tap to Start Audio
+          </button>
+        </>
       )}
 
       <canvas
