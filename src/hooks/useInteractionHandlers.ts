@@ -2,9 +2,10 @@
 import { useEffect } from 'react';
 import { drawVisuals } from '../canvas/drawVisuals';
 import { mapRange } from '../utils/mapRange';
+import * as Tone from 'tone';
 
 export const useInteractionHandlers = (
-  canvasRef: React.RefObject<HTMLCanvasElement>,
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
   osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
   osc3Ref: React.MutableRefObject<Tone.Oscillator | null>
 ) => {

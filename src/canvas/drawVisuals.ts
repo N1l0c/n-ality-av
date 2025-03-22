@@ -23,7 +23,7 @@ export const drawVisuals = (
     const beatFreq = Math.abs(freqX - freqY);
     const hue = mapRange(beatFreq, 0, 20, 200, 360);
     const time = performance.now() / 1000;
-    const pulse = 2 + Math.abs(Math.sin(time * beatFreq)) * 6;
+    const pulse = 1 + Math.abs(Math.sin(time * beatFreq)) * 4;
 
     for (let x = 0; x < canvas.width; x += 4) {
       const y =
