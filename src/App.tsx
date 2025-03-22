@@ -8,8 +8,9 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
-
-  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref);
+  const [mode, setMode] = useState<'pulse' | 'layered'>('pulse');
+  
+  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode);
 
   const handleStart = async () => {
     await Tone.start();
@@ -70,6 +71,39 @@ export default function App() {
           background: 'black',
         }}
       />
+      {started && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 20,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: '0.5rem',
+            zIndex: 10,
+            background: 'rgba(0, 0, 0, 0.5)',
+            padding: '0.5rem 1rem',
+            borderRadius: '10px',
+          }}
+        >
+          {['pulse', 'layered'].map((option) => (
+            <button
+              key={option}
+              onClick={() => setMode(option as 'pulse' | 'layered')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                background: mode === option ? 'white' : 'black',
+                color: mode === option ? 'black' : 'white',
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// canvas/drawVisuals.ts
 import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
@@ -6,7 +7,8 @@ let animationFrameId: number;
 export const drawVisuals = (
   canvas: HTMLCanvasElement,
   freqX: number,
-  freqY: number
+  freqY: number,
+  mode: 'pulse' | 'layered'
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -14,6 +16,10 @@ export const drawVisuals = (
   cancelAnimationFrame(animationFrameId);
 
   const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     const baseFreq = 220;
     const f1 = baseFreq;
     const f2 = freqX;
@@ -25,22 +31,16 @@ export const drawVisuals = (
 
     const time = performance.now() / 1000;
 
-    // 🎵 Composite polyrhythmic pulse
     const beatPulse =
       Math.sin(time * b12 * 2 * Math.PI) +
       Math.sin(time * b13 * 2 * Math.PI) +
       Math.sin(time * b23 * 2 * Math.PI);
 
-    const normalizedPulse = (beatPulse + 3) / 6; // [-3, 3] to [0, 1]
+    const normalizedPulse = (beatPulse + 3) / 6;
     const pulse = 1 + normalizedPulse * 4;
-
     const compositeBeat = (b12 + b13 + b23) / 3;
     const hue = mapRange(compositeBeat, 0, 20, 200, 360);
     const amplitude = canvas.height / 4;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (let x = 0; x < canvas.width; x += 4) {
       const y =
@@ -49,11 +49,39 @@ export const drawVisuals = (
         Math.sin(x * 0.01 * f3) * amplitude;
 
       ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
-      ctx.beginPath();
-      ctx.arc(x, y, pulse, 0, 2 * Math.PI);
-      ctx.fill();
+
+      if (mode === 'pulse') {
+        ctx.beginPath();
+        ctx.arc(x, y, pulse, 0, 2 * Math.PI);
+        ctx.fill();
+      } else if (mode === 'layered') {
+          const scale = 0.02; // tighter wave density
+          const amp = canvas.height / 3; // taller wave height
+          const radius = 2.5; // slightly larger dots
+
+          const y1 = canvas.height / 2 + Math.sin(x * scale * f1) * amp;
+          const y2 = canvas.height / 2 + Math.sin(x * scale * f2) * amp;
+          const y3 = canvas.height / 2 + Math.sin(x * scale * f3) * amp;
+
+          ctx.beginPath();
+          ctx.fillStyle = 'red';
+          ctx.arc(x, y1, radius, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.fillStyle = 'green';
+          ctx.arc(x, y2, radius, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.fillStyle = 'blue';
+          ctx.arc(x, y3, radius, 0, 2 * Math.PI);
+          ctx.fill();
+        
+      }
     }
 
+    // Grid lines
     for (let midi = 45; midi <= 81; midi++) {
       const freq = Tone.Frequency(midi, 'midi').toFrequency();
       const noteName = Tone.Frequency(midi, 'midi').toNote();
@@ -62,17 +90,17 @@ export const drawVisuals = (
       ctx.beginPath();
       ctx.moveTo(xPos, 0);
       ctx.lineTo(xPos, canvas.height);
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
       ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '14px monospace';
+      ctx.font = '12px monospace';
       ctx.fillText(noteName, xPos + 2, 12);
 
       const yPos = mapRange(freq, 880, 110, 0, canvas.height);
       ctx.beginPath();
       ctx.moveTo(0, yPos);
       ctx.lineTo(canvas.width, yPos);
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
       ctx.stroke();
       ctx.fillText(noteName, 10, yPos - 4);
     }

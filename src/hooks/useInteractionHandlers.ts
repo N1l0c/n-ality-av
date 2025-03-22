@@ -7,7 +7,8 @@ import * as Tone from 'tone';
 export const useInteractionHandlers = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
-  osc3Ref: React.MutableRefObject<Tone.Oscillator | null>
+  osc3Ref: React.MutableRefObject<Tone.Oscillator | null>,
+  mode: 'pulse' | 'layered'
 ) => {
   useEffect(() => {
     const updateFromPosition = (x: number, y: number) => {
@@ -19,7 +20,7 @@ export const useInteractionHandlers = (
       osc2Ref.current.frequency.value = freqX;
       osc3Ref.current.frequency.value = freqY;
 
-      drawVisuals(canvasRef.current, freqX, freqY);
+      drawVisuals(canvasRef.current, freqX, freqY, mode);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -52,6 +53,6 @@ export const useInteractionHandlers = (
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [mode]);
 };
 
