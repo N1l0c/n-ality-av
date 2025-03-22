@@ -1,8 +1,10 @@
 html, body, #root {
   margin: 0;
   padding: 0;
+  overflow: hidden;
   height: 100%;
   width: 100%;
+  overscroll-behaviour: none;
 }
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

@@ -61,20 +61,19 @@ export default function App() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw beat interference pattern
         for (let x = 0; x < canvas.width; x += 4) {
           const localFreqX = osc2Ref.current.frequency.value;
           const localFreqY = osc3Ref.current.frequency.value;
 
+          const amplitude = canvas.height / 4;
           const y =
             canvas.height / 2 +
-            Math.sin(x * 0.01 * localFreqX) * (canvas.height / 4) +
-            Math.sin(x * 0.01 * localFreqY) * (canvas.height / 4);
+            Math.sin(x * 0.01 * localFreqX) * amplitude +
+            Math.sin(x * 0.01 * localFreqY) * amplitude;
 
           const avgFreq = (localFreqX + localFreqY) / 2;
           const hue = mapRange(avgFreq, 110, 880, 220, 360);
@@ -85,7 +84,6 @@ export default function App() {
           ctx.fill();
         }
 
-        // Draw MIDI gridlines A2–A5 (MIDI 45–81)
         for (let midi = 45; midi <= 81; midi++) {
           const freq = Tone.Frequency(midi, 'midi').toFrequency();
           const noteName = Tone.Frequency(midi, 'midi').toNote();
@@ -118,7 +116,7 @@ export default function App() {
 
       const handleTouchMove = (e: TouchEvent) => {
         if (e.touches.length > 0) {
-          e.preventDefault(); // 🚫 stop scrolling
+          e.preventDefault();
           const touch = e.touches[0];
           updateFromPosition(touch.clientX, touch.clientY);
         }
@@ -127,62 +125,91 @@ export default function App() {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('touchmove', handleTouchMove, { passive: false });
 
+        const init = async () => {
+            await Tone.start();
+            console.log('Tone.js audio context started');
+            setStarted(true);
+            
+            generateWaves();
+            console.log('🎵 Oscillators created and started');
+            
+            const waitUntilReady = () => {
+                if (osc2Ref.current && osc3Ref.current) {
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    updateFromPosition(centerX, centerY);
+                } else {
+                    requestAnimationFrame(waitUntilReady);
+                }
+            };
+            
+            waitUntilReady();
+            
+        };
+
+      init();
+        
+
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('touchmove', handleTouchMove);
       };
     }, []);
 
-  const startAudio = async () => {
-    await Tone.start();
-    console.log('Tone.js audio context started');
-    setStarted(true);
-    generateWaves();
-  };
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        justifyContent: 'center',
-        alignItems: 'center',
-        color: 'white',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-        N-ality Audio Visual Scaffold
-      </h1>
-      {!started ? (
-        <button
-          onClick={startAudio}
-          style={{
-            padding: '0.5rem 1rem',
-            background: 'white',
-            color: 'black',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-          }}
-        >
-          Start Experience
-        </button>
-      ) : (
-        <p>Move your mouse to explore the frequency space.</p>
-      )}
-      <canvas
-        ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+
+    return (
+      <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          zIndex: -1,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          justifyContent: 'center',
+          alignItems: 'center',
+          color: 'white',
+          fontFamily: 'sans-serif',
         }}
-      />
-    </div>
-  );
+      >
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
+          N-ality Audio Visual Scaffold
+        </h1>
+        <p>Move your finger or mouse to explore the frequency space.</p>
+            {!started && (
+              <button
+                onClick={async () => {
+                  await Tone.start();
+                  setStarted(true);
+                  generateWaves();
+                  const centerX = window.innerWidth / 2;
+                  const centerY = window.innerHeight / 2;
+                  updateFromPosition(centerX, centerY);
+                }}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: 'white',
+                  color: 'black',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                }}
+              >
+                Tap to Start Audio
+              </button>
+            )}
+        <canvas
+          ref={canvasRef}
+          width={window.innerWidth}
+          height={window.innerHeight}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: -1,
+            background: 'black', // ensures canvas background is black
+          }}
+        />
+      </div>
+    );
 }
