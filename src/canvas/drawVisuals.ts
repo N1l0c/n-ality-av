@@ -1,4 +1,4 @@
-// ✅ STEP 3: canvas/drawVisuals.ts
+// ✅ STEP 3: canvas/drawVisuals.ts (with pulsing radius based on beat frequency)
 import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
@@ -15,6 +15,11 @@ export const drawVisuals = (
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const amplitude = canvas.height / 4;
+  const beatFreq = Math.abs(freqX - freqY);
+  const hue = mapRange(beatFreq, 0, 20, 200, 360);
+
+  const time = performance.now() / 1000;
+  const pulse = 2 + Math.abs(Math.sin(time * beatFreq)) * 6;
 
   for (let x = 0; x < canvas.width; x += 4) {
     const y =
@@ -22,12 +27,9 @@ export const drawVisuals = (
       Math.sin(x * 0.01 * freqX) * amplitude +
       Math.sin(x * 0.01 * freqY) * amplitude;
 
-    const avgFreq = (freqX + freqY) / 2;
-    const hue = mapRange(avgFreq, 110, 880, 220, 360);
-
     ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
     ctx.beginPath();
-    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.arc(x, y, pulse, 0, 2 * Math.PI);
     ctx.fill();
   }
 
