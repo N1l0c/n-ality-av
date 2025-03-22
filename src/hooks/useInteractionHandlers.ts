@@ -8,7 +8,7 @@ export const useInteractionHandlers = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
   osc3Ref: React.MutableRefObject<Tone.Oscillator | null>,
-  mode: 'pulse' | 'layered'
+  mode: 'interference beats' | 'waves'
 ) => {
   useEffect(() => {
     const updateFromPosition = (x: number, y: number) => {

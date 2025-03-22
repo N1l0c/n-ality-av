@@ -8,7 +8,7 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
-  const [mode, setMode] = useState<'pulse' | 'layered'>('pulse');
+  const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
   
   useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode);
 
@@ -86,10 +86,10 @@ export default function App() {
             borderRadius: '10px',
           }}
         >
-          {['pulse', 'layered'].map((option) => (
+          {['interference beats', 'waves'].map((option) => (
             <button
               key={option}
-              onClick={() => setMode(option as 'pulse' | 'layered')}
+              onClick={() => setMode(option as 'interference beats' | 'waves')}
               style={{
                 padding: '0.4rem 0.8rem',
                 border: 'none',

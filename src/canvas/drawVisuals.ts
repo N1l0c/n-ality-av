@@ -8,7 +8,7 @@ export const drawVisuals = (
   canvas: HTMLCanvasElement,
   freqX: number,
   freqY: number,
-  mode: 'pulse' | 'layered'
+  mode: 'interference beats' | 'waves'
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -50,11 +50,11 @@ export const drawVisuals = (
 
       ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
 
-      if (mode === 'pulse') {
+      if (mode === 'interference beats') {
         ctx.beginPath();
         ctx.arc(x, y, pulse, 0, 2 * Math.PI);
         ctx.fill();
-      } else if (mode === 'layered') {
+      } else if (mode === 'waves') {
           const scale = 0.02; // tighter wave density
           const amp = canvas.height / 3; // taller wave height
           const radius = 2.5; // slightly larger dots
