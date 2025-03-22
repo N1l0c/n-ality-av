@@ -68,6 +68,8 @@ This is not an instrument of binary oppositions — it's a space for exploring m
 
 This is not just a synthesizer. It’s a way of making sense through **motion, modulation, and multiplicity**. It's a musical score for the three-body problem. A glowing interface where structure arises from touch, not code. Where waves become form, and interference is a method of meaning.
 
+The three-body problem is not solvable in closed form, but it is interpretable through pattern, resonance, and rhythm — much like a good improvisation.
+
 > "You don’t want to be 50 years ahead of your time. You want to be 25."
 > — Michael Levin
 
@@ -91,6 +93,7 @@ Website: [colinfreeth.com](https://colinfreeth.com)
 
 - The open-source audio + creative coding community
 - Early testers and those who heard the tones before they saw the shapes
+- Shoutout to @Alex at the Cynefin Community for his inspirational polyrhythm prototype
 - All the fishes still swimming in the deep
 
 ---
