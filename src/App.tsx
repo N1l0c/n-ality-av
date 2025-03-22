@@ -73,8 +73,8 @@ export default function App() {
 
           const y =
             canvas.height / 2 +
-            Math.sin(x * 0.01 * localFreqX) * 200 +
-            Math.sin(x * 0.01 * localFreqY) * 200;
+            Math.sin(x * 0.01 * localFreqX) * (canvas.height / 4) +
+            Math.sin(x * 0.01 * localFreqY) * (canvas.height / 4);
 
           const avgFreq = (localFreqX + localFreqY) / 2;
           const hue = mapRange(avgFreq, 110, 880, 220, 360);
@@ -118,6 +118,7 @@ export default function App() {
 
       const handleTouchMove = (e: TouchEvent) => {
         if (e.touches.length > 0) {
+          e.preventDefault(); // 🚫 stop scrolling
           const touch = e.touches[0];
           updateFromPosition(touch.clientX, touch.clientY);
         }
