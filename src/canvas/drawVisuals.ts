@@ -1,4 +1,3 @@
-// ✅ STEP 3: canvas/drawVisuals.ts (now animated with requestAnimationFrame)
 import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
@@ -15,21 +14,39 @@ export const drawVisuals = (
   cancelAnimationFrame(animationFrameId);
 
   const animate = () => {
+    const baseFreq = 220;
+    const f1 = baseFreq;
+    const f2 = freqX;
+    const f3 = freqY;
+
+    const b12 = Math.abs(f1 - f2);
+    const b13 = Math.abs(f1 - f3);
+    const b23 = Math.abs(f2 - f3);
+
+    const time = performance.now() / 1000;
+
+    // 🎵 Composite polyrhythmic pulse
+    const beatPulse =
+      Math.sin(time * b12 * 2 * Math.PI) +
+      Math.sin(time * b13 * 2 * Math.PI) +
+      Math.sin(time * b23 * 2 * Math.PI);
+
+    const normalizedPulse = (beatPulse + 3) / 6; // [-3, 3] to [0, 1]
+    const pulse = 1 + normalizedPulse * 4;
+
+    const compositeBeat = (b12 + b13 + b23) / 3;
+    const hue = mapRange(compositeBeat, 0, 20, 200, 360);
+    const amplitude = canvas.height / 4;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const amplitude = canvas.height / 4;
-    const beatFreq = Math.abs(freqX - freqY);
-    const hue = mapRange(beatFreq, 0, 20, 200, 360);
-    const time = performance.now() / 1000;
-    const pulse = 1 + Math.abs(Math.sin(time * beatFreq)) * 4;
-
     for (let x = 0; x < canvas.width; x += 4) {
       const y =
         canvas.height / 2 +
-        Math.sin(x * 0.01 * freqX) * amplitude +
-        Math.sin(x * 0.01 * freqY) * amplitude;
+        Math.sin(x * 0.01 * f2) * amplitude +
+        Math.sin(x * 0.01 * f3) * amplitude;
 
       ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
       ctx.beginPath();
