@@ -32,7 +32,7 @@ export default function App() {
         fontFamily: 'sans-serif',
       }}
     >
-      {!started && (<h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Audio Visual Scaffold</h1>)}
+      {!started && (<h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Sine-Soundscape</h1>)}
 
       {!started && (
         <>
