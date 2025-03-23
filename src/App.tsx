@@ -9,6 +9,9 @@ export default function App() {
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
+  const startYear = 2025;
+  const currentYear = new Date().getFullYear();
+  const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
   
   useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode);
 
@@ -58,7 +61,7 @@ export default function App() {
     <p style={{ maxWidth: '600px', marginBottom: '1rem' }}>
       <strong>Warning:</strong> This app produces continuous tones and visual patterns that may be sensitive for users with auditory or photosensitive conditions. Please lower your volume and proceed with care.
     </p>
-    <p>Move your finger or mouse to explore the frequency space.</p>
+    <p>Move your finger or mouse to explore the frequency space. Try to find patterns in the chaos!</p>
     <button
       onClick={handleStart}
       style={{
@@ -161,6 +164,20 @@ export default function App() {
           2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
         </svg>
       </a>
+      <p
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          zIndex: 10,
+          fontSize: '0.75rem',
+          color: 'rgba(255,255,255,0.6)',
+          margin: 0,
+          fontFamily: 'monospace',
+        }}
+      >
+        © {yearDisplay} Colin Freeth
+      </p>
     </div>
   );
 }
