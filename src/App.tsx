@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import * as Tone from 'tone';
 import { createOscillators } from './audio/oscillators';
 import { useInteractionHandlers } from './hooks/useInteractionHandlers';
-import { snapTo12TET } from './utils/snapTo12TET';
+
 
 export default function App() {
   const [started, setStarted] = useState(false);
