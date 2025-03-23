@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import * as Tone from 'tone';
 import { createOscillators } from './audio/oscillators';
 import { useInteractionHandlers } from './hooks/useInteractionHandlers';
@@ -6,9 +6,41 @@ import { useInteractionHandlers } from './hooks/useInteractionHandlers';
 export default function App() {
   const [started, setStarted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const osc1Ref = useRef<Tone.Oscillator | null>(null);
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
+  const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
+  
+  useEffect(() => {
+    if (!started) return;
+  
+    // Stop and dispose previous oscillators if they exist
+    osc1Ref.current?.stop();
+    osc1Ref.current?.dispose();
+    osc2Ref.current?.stop();
+    osc2Ref.current?.dispose();
+    osc3Ref.current?.stop();
+    osc3Ref.current?.dispose();
+  
+    // Create new ones
+    const { osc1, osc2, osc3 } = createOscillators(waveform);
+    osc1Ref.current = osc1;
+    osc2Ref.current = osc2;
+    osc3Ref.current = osc3;
+  }, [started, waveform]);
+
+  useEffect(() => {
+    return () => {
+      osc1Ref.current?.stop();
+      osc1Ref.current?.dispose();
+      osc2Ref.current?.stop();
+      osc2Ref.current?.dispose();
+      osc3Ref.current?.stop();
+      osc3Ref.current?.dispose();
+    };
+  }, []);
+  
   const startYear = 2025;
   const currentYear = new Date().getFullYear();
   const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
@@ -18,9 +50,7 @@ export default function App() {
   const handleStart = async () => {
     await Tone.start();
     setStarted(true);
-    const { osc1: _osc1, osc2, osc3 } = createOscillators();
-    osc2Ref.current = osc2;
-    osc3Ref.current = osc3;
+
   };
 
   return (
@@ -121,6 +151,35 @@ export default function App() {
               }}
             >
               {option}
+            </button>
+          ))}
+        </div>
+      )}
+      {started && (
+        <div style={{
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.3rem',
+          zIndex: 10,
+        }}>
+          {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
+            <button
+              key={shape}
+              onClick={() => setWaveform(shape as typeof waveform)}
+              style={{
+                padding: '0.3rem 0.6rem',
+                background: waveform === shape ? 'white' : 'black',
+                color: waveform === shape ? 'black' : 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+              }}
+            >
+              {shape}
             </button>
           ))}
         </div>
