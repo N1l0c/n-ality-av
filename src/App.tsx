@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import * as Tone from 'tone';
 import { createOscillators } from './audio/oscillators';
 import { useInteractionHandlers } from './hooks/useInteractionHandlers';
+import { snapTo12TET } from './utils/snapTo12TET';
 
 export default function App() {
   const [started, setStarted] = useState(false);
@@ -11,6 +12,7 @@ export default function App() {
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
+  const [snapToGrid, setSnapToGrid] = useState(false);
   
   useEffect(() => {
     if (!started) return;
@@ -45,7 +47,7 @@ export default function App() {
   const currentYear = new Date().getFullYear();
   const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
   
-  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode);
+  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode, snapToGrid);
 
   const handleStart = async () => {
     await Tone.start();
@@ -182,6 +184,22 @@ export default function App() {
               {shape}
             </button>
           ))}
+          {started && (
+            <button
+             onClick={() => setSnapToGrid(prev => !prev)}
+             style={{
+              padding: '0.3rem 0.6rem',
+              background: snapToGrid ? 'white' : 'black',
+              color: snapToGrid ? 'black' : 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+            }}
+          >
+            12-TET: {snapToGrid ? 'ON' : 'OFF'}
+          </button>
+          )}
         </div>
       )}
       <a

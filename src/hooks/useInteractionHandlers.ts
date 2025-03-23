@@ -2,20 +2,29 @@
 import { useEffect } from 'react';
 import { drawVisuals } from '../canvas/drawVisuals';
 import { mapRange } from '../utils/mapRange';
+import { snapTo12TET } from '../utils/snapTo12TET';
 import * as Tone from 'tone';
+
+type Mode = 'interference beats' | 'waves';
 
 export const useInteractionHandlers = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
   osc3Ref: React.MutableRefObject<Tone.Oscillator | null>,
-  mode: 'interference beats' | 'waves'
+  mode: Mode,
+  snapToGrid: boolean
 ) => {
   useEffect(() => {
     const updateFromPosition = (x: number, y: number) => {
       if (!osc2Ref.current || !osc3Ref.current || !canvasRef.current) return;
 
-      const freqX = mapRange(x, 0, window.innerWidth, 110, 880);
-      const freqY = mapRange(y, 0, window.innerHeight, 880, 110);
+      let freqX = mapRange(x, 0, window.innerWidth, 110, 880);
+      let freqY = mapRange(y, 0, window.innerHeight, 880, 110);
+
+      if (snapToGrid) {
+        freqX = snapTo12TET(freqX);
+        freqY = snapTo12TET(freqY);
+      }
 
       osc2Ref.current.frequency.value = freqX;
       osc3Ref.current.frequency.value = freqY;
@@ -53,6 +62,6 @@ export const useInteractionHandlers = (
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
     };
-  }, [mode]);
+  }, [mode, snapToGrid]); // ← Ensure hook re-runs when mode or snap changes
 };
 
