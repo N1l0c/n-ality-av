@@ -8,7 +8,8 @@ export const drawVisuals = (
   canvas: HTMLCanvasElement,
   freqX: number,
   freqY: number,
-  mode: 'interference beats' | 'waves'
+  mode: 'interference beats' | 'waves',
+  micData?: Float32Array
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -103,6 +104,27 @@ export const drawVisuals = (
       ctx.strokeStyle = 'rgba(255,255,255,0.2)';
       ctx.stroke();
       ctx.fillText(noteName, 10, yPos - 4);
+    }
+
+    if (micData && micData.length > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = 'cyan';
+      ctx.shadowBlur = 8;
+    
+      const midY = canvas.height * 0.75;
+      const scaleX = canvas.width / micData.length;
+      const scaleY = canvas.height / 4;
+    
+      ctx.moveTo(0, midY - micData[0] * scaleY);
+      for (let i = 1; i < micData.length; i++) {
+        const x = i * scaleX;
+        const y = midY - micData[i] * scaleY;
+        ctx.lineTo(x, y);
+      }
+    
+      ctx.stroke();
     }
 
     animationFrameId = requestAnimationFrame(animate);

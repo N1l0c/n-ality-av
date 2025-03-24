@@ -1,4 +1,4 @@
-// ✅ STEP 4: hooks/useInteractionHandlers.ts
+// hooks/useInteractionHandlers.ts
 import { useEffect } from 'react';
 import { drawVisuals } from '../canvas/drawVisuals';
 import { mapRange } from '../utils/mapRange';
@@ -12,11 +12,16 @@ export const useInteractionHandlers = (
   osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
   osc3Ref: React.MutableRefObject<Tone.Oscillator | null>,
   mode: Mode,
-  snapToGrid: boolean
+  snapToGrid: boolean,
+  micAnalyser?: Tone.Analyser | null
 ) => {
   useEffect(() => {
+    let lastFreqX = 220;
+    let lastFreqY = 220;
+    let animationFrameId: number;
+
     const updateFromPosition = (x: number, y: number) => {
-      if (!osc2Ref.current || !osc3Ref.current || !canvasRef.current) return;
+      if (!osc2Ref.current || !osc3Ref.current) return;
 
       let freqX = mapRange(x, 0, window.innerWidth, 110, 880);
       let freqY = mapRange(y, 0, window.innerHeight, 880, 110);
@@ -26,10 +31,26 @@ export const useInteractionHandlers = (
         freqY = snapTo12TET(freqY);
       }
 
+      lastFreqX = freqX;
+      lastFreqY = freqY;
+
       osc2Ref.current.frequency.value = freqX;
       osc3Ref.current.frequency.value = freqY;
+    };
 
-      drawVisuals(canvasRef.current, freqX, freqY, mode);
+    const updateFrame = () => {
+      if (!canvasRef.current) return;
+
+      let micData: Float32Array | undefined;
+      if (micAnalyser) {
+        const buffer = micAnalyser.getValue();
+        if (buffer instanceof Float32Array) {
+          micData = buffer;
+        }
+      }
+
+      drawVisuals(canvasRef.current, lastFreqX, lastFreqY, mode, micData);
+      animationFrameId = requestAnimationFrame(updateFrame);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -51,17 +72,18 @@ export const useInteractionHandlers = (
       updateFromPosition(window.innerWidth / 2, window.innerHeight / 2);
     };
 
+    // Initial setup
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('resize', handleResize);
-
     handleResize();
+    animationFrameId = requestAnimationFrame(updateFrame);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
     };
-  }, [mode, snapToGrid]); // ← Ensure hook re-runs when mode or snap changes
+  }, [mode, snapToGrid, micAnalyser, canvasRef, osc2Ref, osc3Ref]);
 };
-
