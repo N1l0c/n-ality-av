@@ -114,110 +114,126 @@ export default function App() {
   </div>
 )}
 
-      <canvas
-        ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          zIndex: -1,
-          background: 'black',
-        }}
-      />
+  <canvas
+    ref={canvasRef}
+    width={window.innerWidth}
+    height={window.innerHeight}
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      zIndex: -1,
+      background: 'black',
+    }}
+  />
+  {started && (
+    <div
+      style={{
+    position: 'absolute',
+    bottom: 20,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '0.5rem',
+    zIndex: 10,
+    background: 'rgba(0, 0, 0, 0.5)',
+    padding: '0.5rem 1rem',
+    borderRadius: '10px',
+      }}
+    >
+      {['interference beats', 'waves'].map((option) => (
+    <button
+      key={option}
+      onClick={() => setMode(option as 'interference beats' | 'waves')}
+      style={{
+        padding: '0.4rem 0.8rem',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        background: mode === option ? 'white' : 'black',
+        color: mode === option ? 'black' : 'white',
+        opacity: 0.5,
+        transition: 'opacity 0.3s',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+    >
+      {option}
+    </button>
+      ))}
+    </div>
+  )}
+  {started && (
+    <div style={{
+      position: 'absolute',
+      top: 20,
+      right: 20,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.3rem',
+      zIndex: 10,
+    }}>
+      {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
+    <button
+      key={shape}
+      onClick={() => setWaveform(shape as typeof waveform)}
+      style={{
+        padding: '0.3rem 0.6rem',
+        background: waveform === shape ? 'white' : 'black',
+        color: waveform === shape ? 'black' : 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '0.75rem',
+        opacity: 0.5,
+        transition: 'opacity 0.3s',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+    >
+      {shape}
+    </button>
+      ))}
       {started && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: '0.5rem',
-            zIndex: 10,
-            background: 'rgba(0, 0, 0, 0.5)',
-            padding: '0.5rem 1rem',
-            borderRadius: '10px',
-          }}
-        >
-          {['interference beats', 'waves'].map((option) => (
-            <button
-              key={option}
-              onClick={() => setMode(option as 'interference beats' | 'waves')}
-              style={{
-                padding: '0.4rem 0.8rem',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                background: mode === option ? 'white' : 'black',
-                color: mode === option ? 'black' : 'white',
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+    <button
+     onClick={() => setSnapToGrid(prev => !prev)}
+     style={{
+      padding: '0.3rem 0.6rem',
+      background: snapToGrid ? 'white' : 'black',
+      color: snapToGrid ? 'black' : 'white',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '0.75rem',
+      opacity: 0.5,
+      transition: 'opacity 0.3s',
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+      >
+    12-TET: {snapToGrid ? 'ON' : 'OFF'}
+      </button>
       )}
-      {started && (
-        <div style={{
-          position: 'absolute',
-          top: 20,
-          right: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.3rem',
-          zIndex: 10,
-        }}>
-          {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
-            <button
-              key={shape}
-              onClick={() => setWaveform(shape as typeof waveform)}
-              style={{
-                padding: '0.3rem 0.6rem',
-                background: waveform === shape ? 'white' : 'black',
-                color: waveform === shape ? 'black' : 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.75rem',
-              }}
-            >
-              {shape}
-            </button>
-          ))}
-          {started && (
-            <button
-             onClick={() => setSnapToGrid(prev => !prev)}
-             style={{
-              padding: '0.3rem 0.6rem',
-              background: snapToGrid ? 'white' : 'black',
-              color: snapToGrid ? 'black' : 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-            }}
-          >
-            12-TET: {snapToGrid ? 'ON' : 'OFF'}
-          </button>
-          )}
-          <button
-          onClick={toggleMic}
-          style={{
-            padding: '0.3rem 0.6rem',
-            background: micEnabled ? 'white' : 'black',
-            color: micEnabled ? 'black' : 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.75rem',
-          }}
-        >
-          Mic: {micEnabled ? 'ON' : 'OFF'}
-        </button>
-        </div>
-      )}
+      <button
+      onClick={toggleMic}
+      style={{
+    padding: '0.3rem 0.6rem',
+    background: micEnabled ? 'white' : 'black',
+    color: micEnabled ? 'black' : 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '0.75rem',
+    opacity: 0.5,
+    transition: 'opacity 0.3s',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+    >
+      Mic: {micEnabled ? 'ON' : 'OFF'}
+    </button>
+    </div>
+  )}
       <a
         href="https://github.com/N1l0c/n-ality-av"
         target="_blank"
