@@ -52,8 +52,21 @@ export const drawVisuals = (
       ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
 
       if (mode === 'interference beats') {
+        const layers = 4;
+        for (let i = 0; i < layers; i++) {
+          const alpha = 0.2 * (1 - i / layers);
+          const radius = pulse + i * 3;
+
+          ctx.beginPath();
+          ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${alpha})`;
+          ctx.arc(x, y, radius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        // Core brighter pulse
         ctx.beginPath();
-        ctx.arc(x, y, pulse, 0, 2 * Math.PI);
+        ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+        ctx.arc(x, y, pulse / 1.5, 0, 2 * Math.PI);
         ctx.fill();
       } else if (mode === 'waves') {
           const scale = 0.02; // tighter wave density
