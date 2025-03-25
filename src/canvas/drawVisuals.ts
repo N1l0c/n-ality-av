@@ -4,6 +4,14 @@ import { mapRange } from '../utils/mapRange';
 
 let animationFrameId: number;
 
+// Convert linear value to logarithmic scale between min and max
+const logMap = (value: number, min: number, max: number, outMin: number, outMax: number): number => {
+  const logMin = Math.log(min);
+  const logMax = Math.log(max);
+  const scale = (Math.log(value) - logMin) / (logMax - logMin);
+  return outMin + scale * (outMax - outMin);
+};
+
 export const drawVisuals = (
   canvas: HTMLCanvasElement,
   freqX: number,
@@ -52,55 +60,51 @@ export const drawVisuals = (
       ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
 
       if (mode === 'interference beats') {
-        const layers = 4;
-        for (let i = 0; i < layers; i++) {
-          const alpha = 0.2 * (1 - i / layers);
-          const radius = pulse + i * 3;
-
+        const glowLayers = 3;
+        for (let i = glowLayers; i >= 1; i--) {
           ctx.beginPath();
-          ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${alpha})`;
-          ctx.arc(x, y, radius, 0, 2 * Math.PI);
+          ctx.arc(x, y, pulse + i * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${0.03 * i})`;
           ctx.fill();
         }
 
         // Core brighter pulse
         ctx.beginPath();
-        ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
-        ctx.arc(x, y, pulse / 1.5, 0, 2 * Math.PI);
+        ctx.arc(x, y, pulse, 0, 2 * Math.PI);
+        ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
         ctx.fill();
       } else if (mode === 'waves') {
-          const scale = 0.02; // tighter wave density
-          const amp = canvas.height / 3; // taller wave height
-          const radius = 2.5; // slightly larger dots
+        const scale = 0.02;
+        const amp = canvas.height / 3;
+        const radius = 2.5;
 
-          const y1 = canvas.height / 2 + Math.sin(x * scale * f1) * amp;
-          const y2 = canvas.height / 2 + Math.sin(x * scale * f2) * amp;
-          const y3 = canvas.height / 2 + Math.sin(x * scale * f3) * amp;
+        const y1 = canvas.height / 2 + Math.sin(x * scale * f1) * amp;
+        const y2 = canvas.height / 2 + Math.sin(x * scale * f2) * amp;
+        const y3 = canvas.height / 2 + Math.sin(x * scale * f3) * amp;
 
-          ctx.beginPath();
-          ctx.fillStyle = 'red';
-          ctx.arc(x, y1, radius, 0, 2 * Math.PI);
-          ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = 'red';
+        ctx.arc(x, y1, radius, 0, 2 * Math.PI);
+        ctx.fill();
 
-          ctx.beginPath();
-          ctx.fillStyle = 'green';
-          ctx.arc(x, y2, radius, 0, 2 * Math.PI);
-          ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = 'green';
+        ctx.arc(x, y2, radius, 0, 2 * Math.PI);
+        ctx.fill();
 
-          ctx.beginPath();
-          ctx.fillStyle = 'blue';
-          ctx.arc(x, y3, radius, 0, 2 * Math.PI);
-          ctx.fill();
-        
+        ctx.beginPath();
+        ctx.fillStyle = 'blue';
+        ctx.arc(x, y3, radius, 0, 2 * Math.PI);
+        ctx.fill();
       }
     }
 
-    // Grid lines
+    // Grid lines (logarithmic mapping)
     for (let midi = 45; midi <= 81; midi++) {
       const freq = Tone.Frequency(midi, 'midi').toFrequency();
       const noteName = Tone.Frequency(midi, 'midi').toNote();
 
-      const xPos = mapRange(freq, 110, 880, 0, canvas.width);
+      const xPos = logMap(freq, 110, 880, 0, canvas.width);
       ctx.beginPath();
       ctx.moveTo(xPos, 0);
       ctx.lineTo(xPos, canvas.height);
@@ -110,7 +114,7 @@ export const drawVisuals = (
       ctx.font = '12px monospace';
       ctx.fillText(noteName, xPos + 2, 12);
 
-      const yPos = mapRange(freq, 880, 110, 0, canvas.height);
+      const yPos = logMap(freq, 880, 110, 0, canvas.height);
       ctx.beginPath();
       ctx.moveTo(0, yPos);
       ctx.lineTo(canvas.width, yPos);
@@ -125,18 +129,18 @@ export const drawVisuals = (
       ctx.lineWidth = 1.5;
       ctx.shadowColor = 'cyan';
       ctx.shadowBlur = 8;
-    
+
       const midY = canvas.height * 0.75;
       const scaleX = canvas.width / micData.length;
       const scaleY = canvas.height / 4;
-    
+
       ctx.moveTo(0, midY - micData[0] * scaleY);
       for (let i = 1; i < micData.length; i++) {
         const x = i * scaleX;
         const y = midY - micData[i] * scaleY;
         ctx.lineTo(x, y);
       }
-    
+
       ctx.stroke();
     }
 
