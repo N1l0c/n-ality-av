@@ -52,9 +52,13 @@ export default function App() {
   useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode, snapToGrid, analyser);
 
   const handleStart = async () => {
+    console.log("Start button clicked");
+    console.log("Tone.context.state BEFORE:", Tone.context.state);
+  
     await Tone.start();
+  
+    console.log("Tone.context.state AFTER:", Tone.context.state);
     setStarted(true);
-
   };
 
   return (
