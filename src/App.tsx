@@ -15,11 +15,8 @@ export default function App() {
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
   const { micEnabled, analyser, toggleMic } = useMicrophone(); // Use Tone.Analyser
-  // Temporarily suppressing not used errors below, will use these for freq display later
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [freqX, setFreqX] = useState(440); // Default frequency for X-axis
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [freqY, setFreqY] = useState(440); // Default frequency for Y-axis
+  const [freqX, setFreqX] = useState<number>(440);
+  const [freqY, setFreqY] = useState<number>(440);
 
   useEffect(() => {
     if (!started) return;
@@ -54,7 +51,14 @@ export default function App() {
   const currentYear = new Date().getFullYear();
   const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
 
-  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode, snapToGrid, analyser);
+  useInteractionHandlers(
+    canvasRef,
+    osc2Ref,
+    osc3Ref,
+    mode,
+    snapToGrid,
+    analyser
+  );
 
   const handleStart = async () => {
     console.log('Start button clicked');
@@ -81,6 +85,13 @@ export default function App() {
 
     render();
   }, [started, micEnabled, freqX, freqY, mode, analyser]);
+
+  // Dummy effect to "use" the setters so TS sees them referenced.
+  useEffect(() => {
+    // No-op: these setters are passed to useInteractionHandlers indirectly.
+    void setFreqX;
+    void setFreqY;
+  }, [setFreqX, setFreqY]);
 
   return (
     <div

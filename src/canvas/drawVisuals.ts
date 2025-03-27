@@ -2,7 +2,7 @@
 import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
-let animationFrameId: number;
+let animationFrameId: number | undefined;
 
 // Convert linear value to logarithmic scale between min and max
 const logMap = (value: number, min: number, max: number, outMin: number, outMax: number): number => {
@@ -22,7 +22,9 @@ export const drawVisuals = (
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  cancelAnimationFrame(animationFrameId);
+  if (animationFrameId !== undefined) {
+    cancelAnimationFrame(animationFrameId);
+  }
 
   const animate = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -76,7 +78,7 @@ export const drawVisuals = (
       const combinedSignal = micData ? (oscSignal + micSignal) : oscSignal;
 
       // Map combined signal to canvas height
-      const y = canvas.height / 2 + combinedSignal * amplitude;
+      //const y = canvas.height / 2 + combinedSignal * amplitude;
 
       // Adjust color hue based on combined signal
       const hueShift = mapRange(combinedSignal, -3 * amplitude, 3 * amplitude, -30, 30);
