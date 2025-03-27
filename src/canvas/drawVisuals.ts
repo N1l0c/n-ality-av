@@ -17,7 +17,8 @@ export const drawVisuals = (
   freqX: number,
   freqY: number,
   mode: 'interference beats' | 'waves',
-  micData?: Float32Array // Add micData as an optional parameter
+  micData?: Float32Array,
+  analysis?: { rms: number; isOnset: boolean; spectralCentroid: number }
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -185,6 +186,51 @@ export const drawVisuals = (
       
       // Restore context state
       ctx.restore();
+    }
+
+    // Modify visualization based on mic analysis
+    if (analysis) {
+      // Scale glow based on RMS
+      const glowScale = 1 + analysis.rms * 5;
+      
+      // Modify hue based on spectral centroid
+      const centroidHue = mapRange(
+        analysis.spectralCentroid,
+        0,
+        5000, // Adjust range based on your needs
+        0,
+        360
+      );
+
+      // Handle onset triggers
+      if (analysis.isOnset) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Apply to visualization
+      if (mode === 'interference beats') {
+        // Modify pulse size with RMS
+        const pulseSize = pulse * 8 * glowScale;
+        
+        // Draw with spectral hue influence
+        const mixedHue = (hue + centroidHue) / 2;
+
+        for (let x = 0; x < canvas.width; x += 4) {
+          const glowLayers = 3;
+          for (let i = glowLayers; i >= 1; i--) {
+            ctx.beginPath();
+            ctx.arc(x, canvas.height / 2, pulseSize + i * 2, 0, 2 * Math.PI);
+            ctx.fillStyle = `hsla(${mixedHue}, 100%, 60%, ${0.03 * i * glowScale})`;
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, canvas.height / 2, pulseSize, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsl(${mixedHue}, 100%, 60%)`;
+          ctx.fill();
+        }
+      }
     }
 
     animationFrameId = requestAnimationFrame(animate);

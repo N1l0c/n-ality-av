@@ -14,7 +14,7 @@ export default function App() {
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
-  const { micEnabled, analyser, toggleMic, micData } = useMicrophone(started);
+  const { micEnabled, analyser, toggleMic, micData, analysis } = useMicrophone(started);
   const [freqX, setFreqX] = useState<number>(440);
   const [freqY, setFreqY] = useState<number>(440);
 
@@ -95,9 +95,10 @@ export default function App() {
       freqX,
       freqY,
       mode,
-      micData || undefined
+      micData || undefined,
+      analysis
     );
-  }, [canvasRef, freqX, freqY, mode, micData]);
+  }, [canvasRef, freqX, freqY, mode, micData, analysis]);
 
   // Dummy effect to "use" the setters so TS sees them referenced.
   useEffect(() => {
