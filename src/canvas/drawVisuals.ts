@@ -27,6 +27,7 @@ export const drawVisuals = (
   }
 
   const animate = () => {
+    // Clear and fill background
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -154,25 +155,36 @@ export const drawVisuals = (
       ctx.fillText(noteName, 10, yPos - 4);
     }
 
+    // Add mic waveform visualization after main rendering
     if (micData && micData.length > 0) {
+      // Save context state
+      ctx.save();
+      
+      // Set up mic waveform style
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.lineWidth = 1.5;
+      
+      // Add glow effect
       ctx.shadowColor = 'cyan';
       ctx.shadowBlur = 8;
 
-      const midY = canvas.height * 0.75;
+      // Calculate waveform position and scale
+      const micY = canvas.height * 0.85; // Position at bottom
       const scaleX = canvas.width / micData.length;
-      const scaleY = canvas.height / 4;
+      const scaleY = canvas.height * 0.3; // 10% of canvas height
 
-      ctx.moveTo(0, midY - micData[0] * scaleY);
-      for (let i = 1; i < micData.length; i++) {
+      // Draw waveform
+      ctx.moveTo(0, micY);
+      for (let i = 0; i < micData.length; i++) {
         const x = i * scaleX;
-        const y = midY - micData[i] * scaleY;
+        const y = micY + micData[i] * scaleY;
         ctx.lineTo(x, y);
       }
-
       ctx.stroke();
+      
+      // Restore context state
+      ctx.restore();
     }
 
     animationFrameId = requestAnimationFrame(animate);

@@ -1,37 +1,43 @@
-import { useState, useEffect } from 'react';
 import * as Tone from 'tone';
+import { useState, useCallback, useEffect } from 'react';
 
-export const useMicrophone = (): {
-  micEnabled: boolean;
-  analyser: Tone.Analyser | null;
-  toggleMic: () => void;
-} => {
+export const useMicrophone = (started: boolean) => {
   const [micEnabled, setMicEnabled] = useState(false);
   const [analyser, setAnalyser] = useState<Tone.Analyser | null>(null);
+  const [micData, setMicData] = useState<Float32Array | null>(null);
 
-  const toggleMic = async () => {
-    if (micEnabled) {
-      setMicEnabled(false);
-      return;
-    }
-
-    try {
-      const micSource = new Tone.UserMedia();
-      await micSource.open();
-      const analyserNode = new Tone.Analyser('waveform', 2048);
-      micSource.connect(analyserNode);
-      setAnalyser(analyserNode);
-      setMicEnabled(true);
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
+  const toggleMic = useCallback(async () => {
+    if (!micEnabled) {
+      await Tone.start();
+      const mic = new Tone.UserMedia();
+      const newAnalyser = new Tone.Analyser('waveform', 1024);
+      
+      try {
+        await mic.open();
+        mic.connect(newAnalyser);
+        setAnalyser(newAnalyser);
+        setMicEnabled(true);
+      } catch (e) {
+        console.error('Error opening microphone:', e);
+      }
+    } else {
       analyser?.dispose();
-    };
-  }, [analyser]);
+      setAnalyser(null);
+      setMicEnabled(false);
+    }
+  }, [micEnabled, analyser]);
 
-  return { micEnabled, analyser, toggleMic };
+  // Move mic data capture logic here
+  useEffect(() => {
+    if (!started || !analyser) return;
+
+    const interval = setInterval(() => {
+      const buffer = analyser.getValue() as Float32Array;
+      setMicData(buffer);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [started, analyser]);
+
+  return { micEnabled, analyser, toggleMic, micData };
 };

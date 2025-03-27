@@ -14,7 +14,7 @@ export default function App() {
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
-  const { micEnabled, analyser, toggleMic } = useMicrophone(); // Use Tone.Analyser
+  const { micEnabled, analyser, toggleMic, micData } = useMicrophone(started);
   const [freqX, setFreqX] = useState<number>(440);
   const [freqY, setFreqY] = useState<number>(440);
 
@@ -85,6 +85,19 @@ export default function App() {
 
     render();
   }, [started, micEnabled, freqX, freqY, mode, analyser]);
+
+  // Update main render loop
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    drawVisuals(
+      canvasRef.current,
+      freqX,
+      freqY,
+      mode,
+      micData || undefined
+    );
+  }, [canvasRef, freqX, freqY, mode, micData]);
 
   // Dummy effect to "use" the setters so TS sees them referenced.
   useEffect(() => {
