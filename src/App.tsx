@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 import { createOscillators } from './audio/oscillators';
 import { useInteractionHandlers } from './hooks/useInteractionHandlers';
 import { useMicrophone } from './hooks/useMicrophone';
-
+import { drawVisuals } from './canvas/drawVisuals';
 
 export default function App() {
   const [started, setStarted] = useState(false);
@@ -14,11 +14,13 @@ export default function App() {
   const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
-  const { micEnabled, analyser, toggleMic } = useMicrophone();
-  
+  const { micEnabled, analyser, toggleMic } = useMicrophone(); // Use Tone.Analyser
+  const [freqX, setFreqX] = useState(440); // Default frequency for X-axis
+  const [freqY, setFreqY] = useState(440); // Default frequency for Y-axis
+
   useEffect(() => {
     if (!started) return;
-  
+
     // Stop and dispose previous oscillators if they exist
     osc1Ref.current?.stop();
     osc1Ref.current?.dispose();
@@ -26,7 +28,7 @@ export default function App() {
     osc2Ref.current?.dispose();
     osc3Ref.current?.stop();
     osc3Ref.current?.dispose();
-  
+
     // Create new ones
     const { osc1, osc2, osc3 } = createOscillators(waveform);
     osc1Ref.current = osc1;
@@ -44,22 +46,38 @@ export default function App() {
       osc3Ref.current?.dispose();
     };
   }, []);
-  
+
   const startYear = 2025;
   const currentYear = new Date().getFullYear();
   const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
-  
+
   useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode, snapToGrid, analyser);
 
   const handleStart = async () => {
-    console.log("Start button clicked");
-    console.log("Tone.context.state BEFORE:", Tone.context.state);
-  
+    console.log('Start button clicked');
+    console.log('Tone.context.state BEFORE:', Tone.context.state);
+
     await Tone.start();
-  
-    console.log("Tone.context.state AFTER:", Tone.context.state);
+
+    console.log('Tone.context.state AFTER:', Tone.context.state);
     setStarted(true);
   };
+
+  useEffect(() => {
+    if (!started || !micEnabled || !analyser) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const render = () => {
+      const micDataArray = analyser.getValue() as Float32Array; // Use Tone.Analyser's getValue method
+      drawVisuals(canvas, freqX, freqY, mode, micDataArray);
+
+      requestAnimationFrame(render);
+    };
+
+    render();
+  }, [started, micEnabled, freqX, freqY, mode, analyser]);
 
   return (
     <div
@@ -73,171 +91,167 @@ export default function App() {
         fontFamily: 'sans-serif',
       }}
     >
-
-
       {!started && (
-  <div
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '2rem',
-      backgroundColor: 'black',
-      color: 'white',
-      textAlign: 'center',
-      zIndex: 10,
-    }}
-    
-  >
-    <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Sine-Soundscape</h1>
-    <p style={{ maxWidth: '600px', marginBottom: '1rem' }}>
-      <strong>Warning:</strong> This app produces continuous tones and visual patterns that may be sensitive for users with auditory or photosensitive conditions. Please lower your volume and proceed with care.
-    </p>
-    <p>Move your finger or mouse to explore the frequency space. Try to find patterns in the chaos!</p>
-    <button
-      onClick={handleStart}
-      style={{
-        padding: '1rem 2rem',
-        fontSize: '1rem',
-        background: 'white',
-        color: 'black',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        marginTop: '1rem',
-      }}
-    >
-      Tap to Start Audio
-    </button>
-  </div>
-)}
-
-  <canvas
-    ref={canvasRef}
-    width={window.innerWidth}
-    height={window.innerHeight}
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      zIndex: -1,
-      background: 'black',
-    }}
-  />
-  {started && (
-    <div
-      style={{
-    position: 'absolute',
-    bottom: 20,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex',
-    gap: '0.5rem',
-    zIndex: 10,
-    background: 'rgba(0, 0, 0, 0.5)',
-    padding: '0.5rem 1rem',
-    borderRadius: '10px',
-      }}
-    >
-      {['interference beats', 'waves'].map((option) => (
-    <button
-      key={option}
-      onClick={() => setMode(option as 'interference beats' | 'waves')}
-      style={{
-        padding: '0.4rem 0.8rem',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        background: mode === option ? 'white' : 'black',
-        color: mode === option ? 'black' : 'white',
-        opacity: 0.5,
-        transition: 'opacity 0.3s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
-    >
-      {option}
-    </button>
-      ))}
-    </div>
-  )}
-  {started && (
-    <div style={{
-      position: 'absolute',
-      top: 20,
-      right: 20,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.3rem',
-      zIndex: 10,
-    }}>
-      {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
-    <button
-      key={shape}
-      onClick={() => setWaveform(shape as typeof waveform)}
-      style={{
-        padding: '0.3rem 0.6rem',
-        background: waveform === shape ? 'white' : 'black',
-        color: waveform === shape ? 'black' : 'white',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        fontSize: '0.75rem',
-        opacity: 0.5,
-        transition: 'opacity 0.3s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
-    >
-      {shape}
-    </button>
-      ))}
-      {started && (
-    <button
-     onClick={() => setSnapToGrid(prev => !prev)}
-     style={{
-      padding: '0.3rem 0.6rem',
-      background: snapToGrid ? 'white' : 'black',
-      color: snapToGrid ? 'black' : 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontSize: '0.75rem',
-      opacity: 0.5,
-      transition: 'opacity 0.3s',
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
-      >
-    12-TET: {snapToGrid ? 'ON' : 'OFF'}
-      </button>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '2rem',
+            backgroundColor: 'black',
+            color: 'white',
+            textAlign: 'center',
+            zIndex: 10,
+          }}
+        >
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Sine-Soundscape</h1>
+          <p style={{ maxWidth: '600px', marginBottom: '1rem' }}>
+            <strong>Warning:</strong> This app produces continuous tones and visual patterns that may be sensitive for users with auditory or photosensitive conditions. Please lower your volume and proceed with care.
+          </p>
+          <p>Move your finger or mouse to explore the frequency space. Try to find patterns in the chaos!</p>
+          <button
+            onClick={handleStart}
+            style={{
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              background: 'white',
+              color: 'black',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginTop: '1rem',
+            }}
+          >
+            Tap to Start Audio
+          </button>
+        </div>
       )}
-      <button
-      onClick={toggleMic}
-      style={{
-    padding: '0.3rem 0.6rem',
-    background: micEnabled ? 'white' : 'black',
-    color: micEnabled ? 'black' : 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.75rem',
-    opacity: 0.5,
-    transition: 'opacity 0.3s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
-    >
-      Mic: {micEnabled ? 'ON' : 'OFF'}
-    </button>
-    </div>
-  )}
+      <canvas
+        ref={canvasRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          zIndex: -1,
+          background: 'black',
+        }}
+      />
+      {started && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 20,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: '0.5rem',
+            zIndex: 10,
+            background: 'rgba(0, 0, 0, 0.5)',
+            padding: '0.5rem 1rem',
+            borderRadius: '10px',
+          }}
+        >
+          {['interference beats', 'waves'].map((option) => (
+            <button
+              key={option}
+              onClick={() => setMode(option as 'interference beats' | 'waves')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                background: mode === option ? 'white' : 'black',
+                color: mode === option ? 'black' : 'white',
+                opacity: 0.5,
+                transition: 'opacity 0.3s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+      {started && (
+        <div style={{
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.3rem',
+          zIndex: 10,
+        }}>
+          {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
+            <button
+              key={shape}
+              onClick={() => setWaveform(shape as typeof waveform)}
+              style={{
+                padding: '0.3rem 0.6rem',
+                background: waveform === shape ? 'white' : 'black',
+                color: waveform === shape ? 'black' : 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                opacity: 0.5,
+                transition: 'opacity 0.3s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+            >
+              {shape}
+            </button>
+          ))}
+          {started && (
+            <button
+              onClick={() => setSnapToGrid(prev => !prev)}
+              style={{
+                padding: '0.3rem 0.6rem',
+                background: snapToGrid ? 'white' : 'black',
+                color: snapToGrid ? 'black' : 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                opacity: 0.5,
+                transition: 'opacity 0.3s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+            >
+              12-TET: {snapToGrid ? 'ON' : 'OFF'}
+            </button>
+          )}
+          <button
+            onClick={toggleMic}
+            style={{
+              padding: '0.3rem 0.6rem',
+              background: micEnabled ? 'white' : 'black',
+              color: micEnabled ? 'black' : 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              opacity: 0.5,
+              transition: 'opacity 0.3s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+          >
+            Mic: {micEnabled ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      )}
       <a
         href="https://github.com/N1l0c/n-ality-av"
         target="_blank"

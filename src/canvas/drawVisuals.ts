@@ -17,7 +17,7 @@ export const drawVisuals = (
   freqX: number,
   freqY: number,
   mode: 'interference beats' | 'waves',
-  micData?: Float32Array
+  micData?: Float32Array // Add micData as an optional parameter
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -52,28 +52,47 @@ export const drawVisuals = (
     const amplitude = canvas.height / 4;
 
     for (let x = 0; x < canvas.width; x += 4) {
-      const y =
-        canvas.height / 2 +
-        Math.sin(x * 0.01 * f2) * amplitude +
-        Math.sin(x * 0.01 * f3) * amplitude;
+      // Calculate oscillator signals
+      const oscSignal =
+        Math.sin(x * 0.01 * f1) +
+        Math.sin(x * 0.01 * f2) +
+        Math.sin(x * 0.01 * f3);
 
-      ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+      // Compute mic influence
+      let micSignal = 0;
+      if (micData) {
+        const micIndex = Math.floor((x / canvas.width) * micData.length);
+        micSignal = micData[micIndex] * amplitude; // Normalize mic signal
+      }
+
+      // Combine oscillator and mic signals for interference pattern
+      const combinedSignal = oscSignal + micSignal;
+
+      // Map combined signal to canvas height
+      const y = canvas.height / 2 + combinedSignal * amplitude;
+
+      // Adjust color hue based on combined signal
+      const hueShift = mapRange(combinedSignal, -3 * amplitude, 3 * amplitude, -30, 30);
 
       if (mode === 'interference beats') {
+        // Pulsing logic with interference
+        const dynamicPulse = pulse + Math.abs(combinedSignal) * 0.5;
+
         const glowLayers = 3;
         for (let i = glowLayers; i >= 1; i--) {
           ctx.beginPath();
-          ctx.arc(x, y, pulse + i * 2, 0, 2 * Math.PI);
-          ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${0.03 * i})`;
+          ctx.arc(x, y, dynamicPulse + i * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsla(${hue + hueShift}, 100%, 60%, ${0.03 * i})`;
           ctx.fill();
         }
 
         // Core brighter pulse
         ctx.beginPath();
-        ctx.arc(x, y, pulse, 0, 2 * Math.PI);
-        ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+        ctx.arc(x, y, dynamicPulse, 0, 2 * Math.PI);
+        ctx.fillStyle = `hsl(${hue + hueShift}, 100%, 60%)`;
         ctx.fill();
       } else if (mode === 'waves') {
+        // Wave visualization logic
         const scale = 0.02;
         const amp = canvas.height / 3;
         const radius = 2.5;

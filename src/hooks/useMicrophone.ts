@@ -1,40 +1,38 @@
-// audio/useMicrophone.ts
-import { useRef, useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Tone from 'tone';
 
-export const useMicrophone = () => {
-  const micRef = useRef<Tone.UserMedia | null>(null);
-  const analyserRef = useRef<Tone.Analyser | null>(null);
+export const useMicrophone = (): {
+  micEnabled: boolean;
+  analyser: Tone.Analyser | null;
+  toggleMic: () => void;
+} => {
   const [micEnabled, setMicEnabled] = useState(false);
+  const [analyser, setAnalyser] = useState<Tone.Analyser | null>(null);
 
   const toggleMic = async () => {
     if (micEnabled) {
-      // Stop mic
-      micRef.current?.disconnect();
-      micRef.current?.close();
-      analyserRef.current?.dispose();
-      micRef.current = null;
-      analyserRef.current = null;
       setMicEnabled(false);
-    } else {
-      try {
-        const mic = new Tone.UserMedia();
-        await mic.open();
-        const analyser = new Tone.Analyser('waveform', 1024);
-        mic.connect(analyser);
+      return;
+    }
 
-        micRef.current = mic;
-        analyserRef.current = analyser;
-        setMicEnabled(true);
-      } catch (error) {
-        console.error('Microphone access denied or failed:', error);
-      }
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micSource = new Tone.UserMedia();
+      await micSource.open();
+      const analyserNode = new Tone.Analyser('waveform', 2048);
+      micSource.connect(analyserNode);
+      setAnalyser(analyserNode);
+      setMicEnabled(true);
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
     }
   };
 
-  return {
-    micEnabled,
-    analyser: analyserRef.current,
-    toggleMic,
-  };
+  useEffect(() => {
+    return () => {
+      analyser?.dispose();
+    };
+  }, [analyser]);
+
+  return { micEnabled, analyser, toggleMic };
 };
