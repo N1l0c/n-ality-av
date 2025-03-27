@@ -34,16 +34,19 @@ export const drawVisuals = (
     const f2 = freqX;
     const f3 = freqY;
 
+    const time = performance.now() / 1000;
+    const phase = time * 2 * Math.PI; // Global phase reference
+
+    // Calculate beat frequencies
     const b12 = Math.abs(f1 - f2);
     const b13 = Math.abs(f1 - f3);
     const b23 = Math.abs(f2 - f3);
 
-    const time = performance.now() / 1000;
-
+    // Calculate beat pulse using the global phase
     const beatPulse =
-      Math.sin(time * b12 * 2 * Math.PI) +
-      Math.sin(time * b13 * 2 * Math.PI) +
-      Math.sin(time * b23 * 2 * Math.PI);
+      Math.sin(phase * b12) +
+      Math.sin(phase * b13) +
+      Math.sin(phase * b23);
 
     const normalizedPulse = (beatPulse + 3) / 6;
     const pulse = 1 + normalizedPulse * 4;
@@ -52,21 +55,25 @@ export const drawVisuals = (
     const amplitude = canvas.height / 4;
 
     for (let x = 0; x < canvas.width; x += 4) {
-      // Calculate oscillator signals
+      const spatialPhase = x * 0.01;
+      
+      // Calculate oscillator signals with unified phase
       const oscSignal =
-        Math.sin(x * 0.01 * f1) +
-        Math.sin(x * 0.01 * f2) +
-        Math.sin(x * 0.01 * f3);
+        Math.sin(spatialPhase * f1 + phase) +
+        Math.sin(spatialPhase * f2 + phase) +
+        Math.sin(spatialPhase * f3 + phase);
 
-      // Compute mic influence
+      // Apply spatial phase to mic signal
       let micSignal = 0;
       if (micData) {
         const micIndex = Math.floor((x / canvas.width) * micData.length);
-        micSignal = micData[micIndex] * amplitude; // Normalize mic signal
+        // Apply spatial phase transformation to mic signal
+        const micPhase = spatialPhase * (f1 + f2 + f3) / 3; // Average frequency for mic phase
+        micSignal = Math.sin(micPhase + phase) * micData[micIndex] * (amplitude * 0.33);
       }
 
-      // Combine oscillator and mic signals for interference pattern
-      const combinedSignal = oscSignal + micSignal;
+      // Combine signals maintaining phase relationship
+      const combinedSignal = micData ? (oscSignal + micSignal) : oscSignal;
 
       // Map combined signal to canvas height
       const y = canvas.height / 2 + combinedSignal * amplitude;
@@ -75,20 +82,23 @@ export const drawVisuals = (
       const hueShift = mapRange(combinedSignal, -3 * amplitude, 3 * amplitude, -30, 30);
 
       if (mode === 'interference beats') {
-        // Pulsing logic with interference
-        const dynamicPulse = pulse + Math.abs(combinedSignal) * 0.5;
+        // Use the original pulse calculation
+        const dynamicPulse = pulse + Math.abs(combinedSignal) * 0.2; // Reduced multiplier
 
+        // Draw the pulse with glow layers
         const glowLayers = 3;
         for (let i = glowLayers; i >= 1; i--) {
           ctx.beginPath();
-          ctx.arc(x, y, dynamicPulse + i * 2, 0, 2 * Math.PI);
+          ctx.arc(x, canvas.height / 2 + combinedSignal * amplitude, 
+                 dynamicPulse + i * 2, 0, 2 * Math.PI);
           ctx.fillStyle = `hsla(${hue + hueShift}, 100%, 60%, ${0.03 * i})`;
           ctx.fill();
         }
 
-        // Core brighter pulse
+        // Core pulse
         ctx.beginPath();
-        ctx.arc(x, y, dynamicPulse, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height / 2 + combinedSignal * amplitude, 
+               dynamicPulse, 0, 2 * Math.PI);
         ctx.fillStyle = `hsl(${hue + hueShift}, 100%, 60%)`;
         ctx.fill();
       } else if (mode === 'waves') {
