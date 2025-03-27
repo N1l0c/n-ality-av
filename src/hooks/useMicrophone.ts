@@ -16,7 +16,6 @@ export const useMicrophone = (): {
     }
 
     try {
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       const micSource = new Tone.UserMedia();
       await micSource.open();
       const analyserNode = new Tone.Analyser('waveform', 2048);

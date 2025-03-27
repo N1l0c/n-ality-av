@@ -15,7 +15,10 @@ export default function App() {
   const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
   const { micEnabled, analyser, toggleMic } = useMicrophone(); // Use Tone.Analyser
+  // Temporarily suppressing not used errors below, will use these for freq display later
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [freqX, setFreqX] = useState(440); // Default frequency for X-axis
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [freqY, setFreqY] = useState(440); // Default frequency for Y-axis
 
   useEffect(() => {
