@@ -3,7 +3,6 @@ import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
 type VisualizationMode = 'interference beats' | 'waves';
-type Analysis = { rms: number; isOnset: boolean; spectralCentroid: number };
 
 let animationFrameId: number | undefined;
 
@@ -20,8 +19,7 @@ export const drawVisuals = (
   freqX: number,
   freqY: number,
   mode: VisualizationMode,
-  micData?: Float32Array,
-  analysis?: Analysis
+  micData?: Float32Array
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
