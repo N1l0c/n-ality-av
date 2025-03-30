@@ -5,139 +5,163 @@ import { useInteractionHandlers } from './hooks/useInteractionHandlers';
 import { useMicrophone } from './hooks/useMicrophone';
 import { drawVisuals } from './canvas/drawVisuals';
 
+// Types
+type WaveformType = 'sine' | 'triangle' | 'square' | 'sawtooth';
+type VisualizationMode = 'interference beats' | 'waves';
+
+// Styles
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: 'white',
+    fontFamily: 'sans-serif',
+  },
+  startScreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '2rem',
+    backgroundColor: 'black',
+    color: 'white',
+    textAlign: 'center',
+    zIndex: 10,
+  },
+  canvas: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: -1,
+    background: 'black',
+  },
+  modeButtons: {
+    position: 'absolute',
+    bottom: 20,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '0.5rem',
+    zIndex: 10,
+    background: 'rgba(0, 0, 0, 0.5)',
+    padding: '0.5rem 1rem',
+    borderRadius: '10px',
+  },
+  waveformButtons: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.3rem',
+    zIndex: 10,
+  },
+  githubLink: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    zIndex: 10,
+    opacity: 0.7,
+    transition: 'opacity 0.3s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    backgroundColor: 'white',
+  },
+  footerText: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    zIndex: 10,
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.6)',
+    margin: 0,
+    fontFamily: 'monospace',
+  },
+} as const;
+
 export default function App() {
+  // State
   const [started, setStarted] = useState(false);
+  const [mode, setMode] = useState<VisualizationMode>('interference beats');
+  const [waveform, setWaveform] = useState<WaveformType>('sine');
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [freqX, setFreqX] = useState<number>(440);
+  const [freqY, setFreqY] = useState<number>(440);
+
+  // Refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const osc1Ref = useRef<Tone.Oscillator | null>(null);
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
-  const [mode, setMode] = useState<'interference beats' | 'waves'>('interference beats');
-  const [waveform, setWaveform] = useState<'sine' | 'triangle' | 'square' | 'sawtooth'>('sine');
-  const [snapToGrid, setSnapToGrid] = useState(false);
+
+  // Custom hooks
   const { micEnabled, analyser, toggleMic, micData, analysis } = useMicrophone(started);
-  const [freqX, setFreqX] = useState<number>(440);
-  const [freqY, setFreqY] = useState<number>(440);
 
-  useEffect(() => {
-    if (!started) return;
-
-    // Stop and dispose previous oscillators if they exist
-    osc1Ref.current?.stop();
-    osc1Ref.current?.dispose();
-    osc2Ref.current?.stop();
-    osc2Ref.current?.dispose();
-    osc3Ref.current?.stop();
-    osc3Ref.current?.dispose();
-
-    // Create new ones
-    const { osc1, osc2, osc3 } = createOscillators(waveform);
-    osc1Ref.current = osc1;
-    osc2Ref.current = osc2;
-    osc3Ref.current = osc3;
-  }, [started, waveform]);
-
-  useEffect(() => {
-    return () => {
-      osc1Ref.current?.stop();
-      osc1Ref.current?.dispose();
-      osc2Ref.current?.stop();
-      osc2Ref.current?.dispose();
-      osc3Ref.current?.stop();
-      osc3Ref.current?.dispose();
-    };
-  }, []);
-
+  // Date display
   const startYear = 2025;
   const currentYear = new Date().getFullYear();
   const yearDisplay = currentYear === startYear ? `${startYear}` : `${startYear}–${currentYear}`;
 
-  useInteractionHandlers(
-    canvasRef,
-    osc2Ref,
-    osc3Ref,
-    mode,
-    snapToGrid,
-    analyser
-  );
-
-  const handleStart = async () => {
-    console.log('Start button clicked');
-    console.log('Tone.context.state BEFORE:', Tone.context.state);
-
-    await Tone.start();
-
-    console.log('Tone.context.state AFTER:', Tone.context.state);
-    setStarted(true);
-  };
-
+  // Initialize oscillators
   useEffect(() => {
-    if (!started || !micEnabled || !analyser) return;
+    if (!started) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const cleanup = () => {
+      [osc1Ref, osc2Ref, osc3Ref].forEach(ref => {
+        ref.current?.stop();
+        ref.current?.dispose();
+      });
+    };
 
+    cleanup();
+    const { osc1, osc2, osc3 } = createOscillators(waveform);
+    osc1Ref.current = osc1;
+    osc2Ref.current = osc2;
+    osc3Ref.current = osc3;
+
+    return cleanup;
+  }, [started, waveform]);
+
+  // Handle visualization
+  useEffect(() => {
+    if (!started || !micEnabled || !analyser || !canvasRef.current) return;
+
+    let animationFrameId: number;
     const render = () => {
-      const micDataArray = analyser.getValue() as Float32Array; // Use Tone.Analyser's getValue method
-      drawVisuals(canvas, freqX, freqY, mode, micDataArray);
-
-      requestAnimationFrame(render);
+      const micDataArray = analyser.getValue() as Float32Array;
+      drawVisuals(canvasRef.current!, freqX, freqY, mode, micDataArray);
+      animationFrameId = requestAnimationFrame(render);
     };
 
     render();
+    return () => cancelAnimationFrame(animationFrameId);
   }, [started, micEnabled, freqX, freqY, mode, analyser]);
 
-  // Update main render loop
-  useEffect(() => {
-    if (!canvasRef.current) return;
+  // Handle start
+  const handleStart = async () => {
+    await Tone.start();
+    setStarted(true);
+  };
 
-    drawVisuals(
-      canvasRef.current,
-      freqX,
-      freqY,
-      mode,
-      micData || undefined,
-      analysis
-    );
-  }, [canvasRef, freqX, freqY, mode, micData, analysis]);
-
-  // Dummy effect to "use" the setters so TS sees them referenced.
-  useEffect(() => {
-    // No-op: these setters are passed to useInteractionHandlers indirectly.
-    void setFreqX;
-    void setFreqY;
-  }, [setFreqX, setFreqY]);
+  // Interaction handlers
+  useInteractionHandlers(canvasRef, osc2Ref, osc3Ref, mode, snapToGrid, analyser);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        justifyContent: 'center',
-        alignItems: 'center',
-        color: 'white',
-        fontFamily: 'sans-serif',
-      }}
-    >
+    <div style={styles.container}>
       {!started && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '2rem',
-            backgroundColor: 'black',
-            color: 'white',
-            textAlign: 'center',
-            zIndex: 10,
-          }}
-        >
+        <div style={styles.startScreen}>
           <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>N-ality Sine-Soundscape</h1>
           <p style={{ maxWidth: '600px', marginBottom: '1rem' }}>
             <strong>Warning:</strong> This app produces continuous tones and visual patterns that may be sensitive for users with auditory or photosensitive conditions. Please lower your volume and proceed with care.
@@ -164,33 +188,14 @@ export default function App() {
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          zIndex: -1,
-          background: 'black',
-        }}
+        style={styles.canvas}
       />
       {started && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: '0.5rem',
-            zIndex: 10,
-            background: 'rgba(0, 0, 0, 0.5)',
-            padding: '0.5rem 1rem',
-            borderRadius: '10px',
-          }}
-        >
+        <div style={styles.modeButtons}>
           {['interference beats', 'waves'].map((option) => (
             <button
               key={option}
-              onClick={() => setMode(option as 'interference beats' | 'waves')}
+              onClick={() => setMode(option as VisualizationMode)}
               style={{
                 padding: '0.4rem 0.8rem',
                 border: 'none',
@@ -210,19 +215,11 @@ export default function App() {
         </div>
       )}
       {started && (
-        <div style={{
-          position: 'absolute',
-          top: 20,
-          right: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.3rem',
-          zIndex: 10,
-        }}>
+        <div style={styles.waveformButtons}>
           {['sine', 'triangle', 'square', 'sawtooth'].map((shape) => (
             <button
               key={shape}
-              onClick={() => setWaveform(shape as typeof waveform)}
+              onClick={() => setWaveform(shape as WaveformType)}
               style={{
                 padding: '0.3rem 0.6rem',
                 background: waveform === shape ? 'white' : 'black',
@@ -284,21 +281,7 @@ export default function App() {
         href="https://github.com/N1l0c/n-ality-av"
         target="_blank"
         rel="noopener noreferrer"
-        style={{
-          position: 'absolute',
-          bottom: 20,
-          right: 20,
-          zIndex: 10,
-          opacity: 0.7,
-          transition: 'opacity 0.3s',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          backgroundColor: 'white',
-        }}
+        style={styles.githubLink}
         onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
         onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
       >
@@ -319,18 +302,7 @@ export default function App() {
           2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
         </svg>
       </a>
-      <p
-        style={{
-          position: 'absolute',
-          bottom: 20,
-          left: 20,
-          zIndex: 10,
-          fontSize: '0.75rem',
-          color: 'rgba(255,255,255,0.6)',
-          margin: 0,
-          fontFamily: 'monospace',
-        }}
-      >
+      <p style={styles.footerText}>
         © {yearDisplay} Colin Freeth
       </p>
     </div>

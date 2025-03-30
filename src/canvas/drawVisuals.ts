@@ -2,9 +2,12 @@
 import * as Tone from 'tone';
 import { mapRange } from '../utils/mapRange';
 
+type VisualizationMode = 'interference beats' | 'waves';
+type Analysis = { rms: number; isOnset: boolean; spectralCentroid: number };
+
 let animationFrameId: number | undefined;
 
-// Convert linear value to logarithmic scale between min and max
+// Keep logMap as a pure utility function
 const logMap = (value: number, min: number, max: number, outMin: number, outMax: number): number => {
   const logMin = Math.log(min);
   const logMax = Math.log(max);
@@ -16,13 +19,14 @@ export const drawVisuals = (
   canvas: HTMLCanvasElement,
   freqX: number,
   freqY: number,
-  mode: 'interference beats' | 'waves',
+  mode: VisualizationMode,
   micData?: Float32Array,
-  analysis?: { rms: number; isOnset: boolean; spectralCentroid: number }
+  analysis?: Analysis
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
+  // Clear any existing animation
   if (animationFrameId !== undefined) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -33,34 +37,27 @@ export const drawVisuals = (
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Base frequencies and phase
     const baseFreq = 220;
-    const f1 = baseFreq;
-    const f2 = freqX;
-    const f3 = freqY;
-
-    const time = performance.now() / 1000;
-    const phase = time * 2 * Math.PI; // Global phase reference
+    const [f1, f2, f3] = [baseFreq, freqX, freqY];
+    const phase = (performance.now() / 1000) * 2 * Math.PI;
+    const amplitude = canvas.height / 6;
 
     // Calculate beat frequencies
     const b12 = Math.abs(f1 - f2);
     const b13 = Math.abs(f1 - f3);
     const b23 = Math.abs(f2 - f3);
 
-    // Calculate beat pulse using the global phase
-    const beatPulse =
-      Math.sin(phase * b12) +
-      Math.sin(phase * b13) +
-      Math.sin(phase * b23);
-
+    const beatPulse = Math.sin(phase * b12) + Math.sin(phase * b13) + Math.sin(phase * b23);
     const normalizedPulse = (beatPulse + 3) / 6;
     const pulse = 1 + normalizedPulse * 4;
     const compositeBeat = (b12 + b13 + b23) / 3;
     const hue = mapRange(compositeBeat, 0, 20, 200, 360);
-    const amplitude = canvas.height / 4;
 
+    // Main rendering loop
     for (let x = 0; x < canvas.width; x += 4) {
       const spatialPhase = x * 0.01;
-      
+
       // Calculate oscillator signals with unified phase
       const oscSignal =
         Math.sin(spatialPhase * f1 + phase) +
@@ -71,25 +68,17 @@ export const drawVisuals = (
       let micSignal = 0;
       if (micData) {
         const micIndex = Math.floor((x / canvas.width) * micData.length);
-        // Apply spatial phase transformation to mic signal
-        const micPhase = spatialPhase * (f1 + f2 + f3) / 3; // Average frequency for mic phase
-        micSignal = Math.sin(micPhase + phase) * micData[micIndex] * (amplitude * 0.33);
+        const micPhase = spatialPhase * (f1 + f2 + f3) / 3;
+        micSignal = Math.sin(micPhase + phase) * micData[micIndex] * (amplitude * 0.03);
       }
 
-      // Combine signals maintaining phase relationship
       const combinedSignal = micData ? (oscSignal + micSignal) : oscSignal;
 
-      // Map combined signal to canvas height
-      //const y = canvas.height / 2 + combinedSignal * amplitude;
-
-      // Adjust color hue based on combined signal
       const hueShift = mapRange(combinedSignal, -3 * amplitude, 3 * amplitude, -30, 30);
 
       if (mode === 'interference beats') {
-        // Use the original pulse calculation
-        const dynamicPulse = pulse + Math.abs(combinedSignal) * 0.2; // Reduced multiplier
+        const dynamicPulse = pulse + Math.abs(combinedSignal) * 0.2;
 
-        // Draw the pulse with glow layers
         const glowLayers = 3;
         for (let i = glowLayers; i >= 1; i--) {
           ctx.beginPath();
@@ -99,14 +88,12 @@ export const drawVisuals = (
           ctx.fill();
         }
 
-        // Core pulse
         ctx.beginPath();
         ctx.arc(x, canvas.height / 2 + combinedSignal * amplitude, 
                dynamicPulse, 0, 2 * Math.PI);
         ctx.fillStyle = `hsl(${hue + hueShift}, 100%, 60%)`;
         ctx.fill();
       } else if (mode === 'waves') {
-        // Wave visualization logic
         const scale = 0.02;
         const amp = canvas.height / 3;
         const radius = 2.5;
@@ -132,7 +119,7 @@ export const drawVisuals = (
       }
     }
 
-    // Grid lines (logarithmic mapping)
+    // Draw grid lines
     for (let midi = 45; midi <= 81; midi++) {
       const freq = Tone.Frequency(midi, 'midi').toFrequency();
       const noteName = Tone.Frequency(midi, 'midi').toNote();
@@ -156,26 +143,19 @@ export const drawVisuals = (
       ctx.fillText(noteName, 10, yPos - 4);
     }
 
-    // Add mic waveform visualization after main rendering
-    if (micData && micData.length > 0) {
-      // Save context state
+    // Draw mic waveform if available
+    if (micData?.length) {
       ctx.save();
-      
-      // Set up mic waveform style
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.lineWidth = 1.5;
-      
-      // Add glow effect
       ctx.shadowColor = 'cyan';
       ctx.shadowBlur = 8;
 
-      // Calculate waveform position and scale
-      const micY = canvas.height * 0.85; // Position at bottom
+      const micY = canvas.height * 0.85;
       const scaleX = canvas.width / micData.length;
-      const scaleY = canvas.height * 0.3; // 10% of canvas height
+      const scaleY = canvas.height * 0.3;
 
-      // Draw waveform
       ctx.moveTo(0, micY);
       for (let i = 0; i < micData.length; i++) {
         const x = i * scaleX;
@@ -183,54 +163,7 @@ export const drawVisuals = (
         ctx.lineTo(x, y);
       }
       ctx.stroke();
-      
-      // Restore context state
       ctx.restore();
-    }
-
-    // Modify visualization based on mic analysis
-    if (analysis) {
-      // Scale glow based on RMS
-      const glowScale = 1 + analysis.rms * 5;
-      
-      // Modify hue based on spectral centroid
-      const centroidHue = mapRange(
-        analysis.spectralCentroid,
-        0,
-        5000, // Adjust range based on your needs
-        0,
-        360
-      );
-
-      // Handle onset triggers
-      if (analysis.isOnset) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      // Apply to visualization
-      if (mode === 'interference beats') {
-        // Modify pulse size with RMS
-        const pulseSize = pulse * 8 * glowScale;
-        
-        // Draw with spectral hue influence
-        const mixedHue = (hue + centroidHue) / 2;
-
-        for (let x = 0; x < canvas.width; x += 4) {
-          const glowLayers = 3;
-          for (let i = glowLayers; i >= 1; i--) {
-            ctx.beginPath();
-            ctx.arc(x, canvas.height / 2, pulseSize + i * 2, 0, 2 * Math.PI);
-            ctx.fillStyle = `hsla(${mixedHue}, 100%, 60%, ${0.03 * i * glowScale})`;
-            ctx.fill();
-          }
-
-          ctx.beginPath();
-          ctx.arc(x, canvas.height / 2, pulseSize, 0, 2 * Math.PI);
-          ctx.fillStyle = `hsl(${mixedHue}, 100%, 60%)`;
-          ctx.fill();
-        }
-      }
     }
 
     animationFrameId = requestAnimationFrame(animate);

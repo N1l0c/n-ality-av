@@ -9,8 +9,8 @@ type Mode = 'interference beats' | 'waves';
 
 export const useInteractionHandlers = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  osc2Ref: React.MutableRefObject<Tone.Oscillator | null>,
-  osc3Ref: React.MutableRefObject<Tone.Oscillator | null>,
+  osc2Ref: React.RefObject<Tone.Oscillator | null>,
+  osc3Ref: React.RefObject<Tone.Oscillator | null>,
   mode: Mode,
   snapToGrid: boolean,
   micAnalyser?: Tone.Analyser | null
