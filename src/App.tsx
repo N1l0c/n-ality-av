@@ -97,8 +97,8 @@ export default function App() {
   const [mode, setMode] = useState<VisualizationMode>('interference beats');
   const [waveform, setWaveform] = useState<WaveformType>('sine');
   const [snapToGrid, setSnapToGrid] = useState(false);
-  const [freqX, setFreqX] = useState<number>(440);
-  const [freqY, setFreqY] = useState<number>(440);
+  const [freqX, _setFreqX] = useState<number>(440);
+  const [freqY, _setFreqY] = useState<number>(440);
 
   // Refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -106,8 +106,8 @@ export default function App() {
   const osc2Ref = useRef<Tone.Oscillator | null>(null);
   const osc3Ref = useRef<Tone.Oscillator | null>(null);
 
-  // Custom hooks
-  const { micEnabled, analyser, toggleMic, micData, analysis } = useMicrophone(started);
+  // Custom hooks - only destructure what we actually use
+  const { micEnabled, analyser, toggleMic } = useMicrophone(started);
 
   // Date display
   const startYear = 2025;
