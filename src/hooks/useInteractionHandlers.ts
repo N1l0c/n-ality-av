@@ -1,7 +1,7 @@
 // hooks/useInteractionHandlers.ts
 import { useEffect } from 'react';
 import { drawVisuals } from '../canvas/drawVisuals';
-import { mapRange } from '../utils/mapRange';
+// import { mapRange } from '../utils/mapRange';
 import { snapTo12TET } from '../utils/snapTo12TET';
 import * as Tone from 'tone';
 
@@ -23,8 +23,21 @@ export const useInteractionHandlers = (
     const updateFromPosition = (x: number, y: number) => {
       if (!osc2Ref.current || !osc3Ref.current) return;
 
-      let freqX = mapRange(x, 0, window.innerWidth, 110, 880);
-      let freqY = mapRange(y, 0, window.innerHeight, 880, 110);
+      // Log scale frequency mapping (range: 55Hz to 1760Hz)
+      const minFreq = 55;   // A1
+      const maxFreq = 1760; // A6
+      
+      // Convert to log scale
+      const logMin = Math.log(minFreq);
+      const logMax = Math.log(maxFreq);
+      
+      // Map x position to frequency logarithmically
+      const xScale = x / window.innerWidth;
+      let freqX = Math.exp(logMin + (logMax - logMin) * xScale);
+      
+      // Map y position to frequency logarithmically (inverted)
+      const yScale = 1 - (y / window.innerHeight);
+      let freqY = Math.exp(logMin + (logMax - logMin) * yScale);
 
       if (snapToGrid) {
         freqX = snapTo12TET(freqX);

@@ -118,11 +118,18 @@ export const drawVisuals = (
     }
 
     // Draw grid lines
-    for (let midi = 45; midi <= 81; midi++) {
+    const minFreq = 55;   // A1
+    const maxFreq = 1760; // A6
+    const midiMin = Tone.Frequency(minFreq).toMidi();
+    const midiMax = Tone.Frequency(maxFreq).toMidi();
+
+    // Draw grid lines for each note in the range
+    for (let midi = midiMin; midi <= midiMax; midi++) {
       const freq = Tone.Frequency(midi, 'midi').toFrequency();
       const noteName = Tone.Frequency(midi, 'midi').toNote();
 
-      const xPos = logMap(freq, 110, 880, 0, canvas.width);
+      // X axis grid lines and labels
+      const xPos = logMap(freq, minFreq, maxFreq, 0, canvas.width);
       ctx.beginPath();
       ctx.moveTo(xPos, 0);
       ctx.lineTo(xPos, canvas.height);
@@ -132,7 +139,8 @@ export const drawVisuals = (
       ctx.font = '12px monospace';
       ctx.fillText(noteName, xPos + 2, 12);
 
-      const yPos = logMap(freq, 880, 110, 0, canvas.height);
+      // Y axis grid lines and labels (inverted)
+      const yPos = logMap(freq, maxFreq, minFreq, 0, canvas.height);
       ctx.beginPath();
       ctx.moveTo(0, yPos);
       ctx.lineTo(canvas.width, yPos);
